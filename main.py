@@ -1,3 +1,5 @@
+__version__ = "1.0.0"
+
 from config import config
 from ai_utils.ai_services import ai_query
 from search_utils.search_engine import perform_search
