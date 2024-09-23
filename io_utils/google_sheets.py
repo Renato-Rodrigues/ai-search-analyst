@@ -1,7 +1,7 @@
 # Google Sheets I/O operations
 
 from config import config
-from io_utils.google_auth import get_google_sheets_credentials
+from io_utils.google_sheets_auth import get_google_sheets_credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 import json
