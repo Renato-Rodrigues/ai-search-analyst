@@ -5,8 +5,7 @@ from io_utils.google_auth import get_google_sheets_credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 import json
-import re
-    
+
 def get_google_sheets_value(range_name, output_mode='default'):
     """
     Fetches range values from a Google Sheet.
@@ -64,7 +63,7 @@ def get_google_sheets_value(range_name, output_mode='default'):
 #row=out['row']+1
 #type=out['type']
 
-def set_google_sheets_value(value, sheet_name, column, row, value_type='string', clear_sheet=False, write_headers=True):
+def set_google_sheets_value(value, sheet_name, column, row=None, value_type='string', write_headers=True, cleared_sheets=None):
     # Input validation and preprocessing
     if value_type == 'table':
         if isinstance(value, dict):
@@ -104,9 +103,13 @@ def set_google_sheets_value(value, sheet_name, column, row, value_type='string',
     creds = get_google_sheets_credentials()
     service = build('sheets', 'v4', credentials=creds)
 
-    # Check if sheet exists, if not create it
-    if not ensure_sheet_exists(sheet_name):
+    # Check if sheet exists, if not create it, and clear if necessary
+    if not ensure_sheet_exists(sheet_name, cleared_sheets=cleared_sheets):
         raise Exception(f"Failed to ensure sheet '{sheet_name}' exists")
+
+    # Determine the row to write if not provided
+    if row is None:
+        row = 1 if (last_row := find_row_with_content(sheet_name, column, content='last')) == 1 else last_row + 2
 
     # Determine the range to write
     start_cell = f"{column}{row}"
@@ -135,12 +138,13 @@ def set_google_sheets_value(value, sheet_name, column, row, value_type='string',
         print(f"An error occurred: {error}")
         raise
 
-def ensure_sheet_exists(sheet_name, clear_if_exists=False):
+def ensure_sheet_exists(sheet_name, clear_if_exists=False, cleared_sheets=None):
     """
     Checks if a sheet exists, creates it if it doesn't, and optionally clears it if it does.
 
     :param sheet_name: Name of the sheet to check/create
     :param clear_if_exists: If True, clear the sheet if it already exists
+    :param cleared_sheets: Set of sheets that have been cleared
     :return: True if the sheet existed or was created successfully, False otherwise
     """
 
@@ -168,7 +172,7 @@ def ensure_sheet_exists(sheet_name, clear_if_exists=False):
                 body=request_body
             ).execute()
             print(f"Sheet '{sheet_name}' created.")
-        elif clear_if_exists:
+        elif clear_if_exists and (cleared_sheets is None or sheet_name not in cleared_sheets):
             # Clear the existing sheet
             clear_range = f"'{sheet_name}'!A1:ZZ"
             service.spreadsheets().values().clear(
@@ -176,28 +180,14 @@ def ensure_sheet_exists(sheet_name, clear_if_exists=False):
                 range=clear_range,
                 body={}
             ).execute()
+            if cleared_sheets is not None:
+                cleared_sheets.add(sheet_name)
             print(f"Sheet '{sheet_name}' cleared.")
         
         return True
     except HttpError as error:
         print(f"An error occurred while checking/creating/clearing the sheet: {error}")
         return False
-
-def replace_placeholders(item, variables):
-    """
-    Replaces placeholders in the text or dictionary values with corresponding variable values.
-    
-    :param item: The text or dictionary containing placeholders
-    :param variables: A dictionary of variable names and their values
-    :return: The text or dictionary with placeholders replaced
-    """
-    if isinstance(item, str):
-        return re.sub(r'\[\[(.*?)\]\]', lambda m: str(variables.get(m.group(1), m.group(0))), item)
-    elif isinstance(item, dict):
-        return {k: replace_placeholders(v, variables) for k, v in item.items()}
-    else:
-        return item
-
 
 def find_row_with_content(sheet_name, column, content='last'):
     """
@@ -238,6 +228,29 @@ def find_row_with_content(sheet_name, column, content='last'):
     
     except HttpError as error:
         print(f"An error occurred: {error}")
+        raise
+
+def clear_sheet(sheet_name):
+    """
+    Clears all content from a specified sheet.
+
+    :param sheet_name: Name of the sheet to clear
+    """
+    spreadsheet_id = config['io']['googleSheets']['spreadsheet_id']
+    creds = get_google_sheets_credentials()
+    service = build('sheets', 'v4', credentials=creds)
+
+    try:
+        # Clear the entire sheet
+        clear_range = f"'{sheet_name}'!A1:ZZ"
+        service.spreadsheets().values().clear(
+            spreadsheetId=spreadsheet_id,
+            range=clear_range,
+            body={}
+        ).execute()
+        print(f"Sheet '{sheet_name}' cleared.")
+    except HttpError as error:
+        print(f"An error occurred while clearing the sheet: {error}")
         raise
 
 

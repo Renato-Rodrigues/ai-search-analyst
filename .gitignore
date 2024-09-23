@@ -3,3 +3,4 @@ api_cache.json
 credentials.json
 token.pickle
 __pycache__
+io_operations.db
