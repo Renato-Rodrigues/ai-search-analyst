@@ -1,6 +1,6 @@
 import sqlite3
 from typing import Any, Dict, List, Union
-from io_utils.google_sheets_io import google_sheets_io
+from io_utils.google_sheets import google_sheets_io
 
 class IODatabase:
     def __init__(self, db_path: str = 'io_operations.db'):
@@ -41,14 +41,13 @@ class IOService:
     def __init__(self):
         self.db = IODatabase()
         self.cleared_sheets = set()
-        self.google_sheets = google_sheets_io
 
     def get_value(self, sheet_name: str, output_mode: str = 'list_dict_column') -> Union[List[Dict], Dict]:
         cached_data = self.db.get_last_operation('read', sheet_name)
         if cached_data:
             return cached_data
         
-        data = self.google_sheets.get_value(sheet_name, output_mode)
+        data = google_sheets_io.get_value(sheet_name, output_mode)
         self.db.save_operation('read', sheet_name, data)
         return data
 
@@ -57,20 +56,20 @@ class IOService:
             self.clear_sheet(sheet_name)
             self.cleared_sheets.add(sheet_name)
         
-        self.google_sheets.set_value(value, sheet_name, column, row, value_type, write_headers=write_headers, cleared_sheets=self.cleared_sheets)
+        google_sheets_io.set_value(value, sheet_name, column, row, value_type, write_headers=write_headers, cleared_sheets=self.cleared_sheets)
         self.db.save_operation('write', sheet_name, {'value': value, 'column': column, 'row': row, 'type': value_type, 'write_headers': write_headers})
 
     def find_row_with_content(self, sheet_name: str, column: str) -> int:
-        row = self.google_sheets.find_row_with_content(sheet_name, column)
+        row = google_sheets_io.find_row_with_content(sheet_name, column)
         self.db.save_operation('find_row', sheet_name, {'column': column, 'row': row})
         return row
 
     def ensure_sheet_exists(self, sheet_name: str, clear_if_exists: bool = False):
-        self.google_sheets.ensure_sheet_exists(sheet_name, clear_if_exists=clear_if_exists, cleared_sheets=self.cleared_sheets)
+        google_sheets_io.ensure_sheet_exists(sheet_name, clear_if_exists=clear_if_exists)
         self.db.save_operation('ensure_sheet', sheet_name, {'clear_if_exists': clear_if_exists})
 
     def clear_sheet(self, sheet_name: str):
-        self.google_sheets.clear_sheet(sheet_name)
+        google_sheets_io.clear_sheet(sheet_name)
         self.db.save_operation('clear_sheet', sheet_name, {})
 
 io_service = IOService()
