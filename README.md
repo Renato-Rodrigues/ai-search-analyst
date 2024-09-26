@@ -33,8 +33,9 @@ project_folder/
 │   └── gpt.py              # Handles OpenAI GPT API interactions
 │
 ├── io_utils/
+│   ├── io_services.py      # Manages IO service selection and execution
 │   ├── google_auth.py      # Manages Google API authentication
-│   └── google_sheets_io.py # Handles reading from and writing to Google Sheets
+│   └── google_sheets.py    # Handles reading from and writing to Google Sheets
 │
 ├── search_utils/
 │   ├── bing_search.py      # Implements Bing Search API functionality
@@ -45,12 +46,14 @@ project_folder/
 ├── .gitignore              # Specifies intentionally untracked files to ignore
 ├── api_cache.json          # Caches API responses to reduce API calls (not tracked in git)
 ├── credentials.json        # Stores Google API credentials (not tracked in git)
-├── FEATURES.md             # This file, describing features and project structure
+├── io_operations.py        # database with io operation results
+├── LICENSE                 # MIT License
 ├── README.md               # Provides an overview and instructions for the project
 ├── config.py               # Stores configuration options for the application
 ├── main.py                 # Main entry point of the application
 ├── requirements.txt        # Lists all Python package dependencies
-└── token.pickle            # Stores Google API access tokens for authentication (not tracked in git)
+├── token.pickle            # Stores Google API access tokens for authentication (not tracked in git)
+└── utils.py                # Utility functions for the project
 ```
 
 ## Setup

@@ -21,7 +21,7 @@ def reload_module(module_name):
     """
     Reload a module and return its updated functions.
     
-    :param module_name: The name of the module to reload (e.g., 'io_utils.google_sheets_io')
+    :param module_name: The name of the module to reload (e.g., 'io_utils.google_sheets')
     :return: A dictionary of the module's updated functions
     """
     # Import the module
@@ -36,7 +36,7 @@ def reload_module(module_name):
     return functions
 
 # Usage:
-#updated_functions = reload_module('io_utils.google_sheets_io')
+#updated_functions = reload_module('io_utils.google_sheets')
 
 # Clear invalid cache entries
 # from cache_utils import clear_invalid_cache

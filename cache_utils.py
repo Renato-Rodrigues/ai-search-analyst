@@ -29,8 +29,8 @@ def cache_result(func):
         # If not in cache or cache is empty, call the function
         result = func(*args, **kwargs)
         
-        # Store the result in cache only if it's not an error message and not empty
-        if not isinstance(result, dict) or ('error' not in result and is_valid_cache_value(result)):
+        # Store the result in cache only if it's not an error message, not empty, and not an empty list
+        if not isinstance(result, dict) or ('error' not in result and is_valid_cache_value(result) and result != []):
             cache[cache_key] = result
             save_cache(cache)
         else:

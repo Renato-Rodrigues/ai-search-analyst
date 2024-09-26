@@ -70,6 +70,11 @@ def perform_google_search(search_query, exactTerms, orTerms, num_results, dateRe
             
         search_results = response.json().get('items', [])
         
+        if not search_results:
+            error_message = "No search results found. There might be an error in the formulation of the search query."
+            warnings.warn(error_message, UserWarning)
+            return {'error': error_message}  # Return error in a format that won't be cached
+
         all_results.extend([{
             'title': item['title'],
             'displayLink': item['displayLink'],

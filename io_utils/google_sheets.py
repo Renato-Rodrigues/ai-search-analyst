@@ -73,9 +73,7 @@ class GoogleSheetsIO:
             if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
                 value = [{"Error": "Invalid table format"}]
         
-        elif value_type == 'string':
-            value = [str(value)]
-        else:
+        else:  # For both 'string' and any other non-table type
             value = value if isinstance(value, list) else [value]
 
         # Prepare values for writing
@@ -207,28 +205,6 @@ class GoogleSheetsIO:
         except HttpError as error:
             print(f"An error occurred: {error}")
             raise
-
-    def clear_sheet(self, sheet_name):
-        """
-        Clears all content from a specified sheet.
-
-        :param sheet_name: Name of the sheet to clear
-        """
-        try:
-            # Clear the entire sheet
-            clear_range = f"'{sheet_name}'!A1:ZZ"
-            self.service.spreadsheets().values().clear(
-                spreadsheetId=self.spreadsheet_id,
-                range=clear_range,
-                body={}
-            ).execute()
-            print(f"Sheet '{sheet_name}' cleared.")
-        except HttpError as error:
-            print(f"An error occurred while clearing the sheet: {error}")
-            raise
-
-# Create a single instance of GoogleSheetsIO
-google_sheets_io = GoogleSheetsIO()
 
 
 

@@ -54,5 +54,12 @@ config = {
         'googleSheets': {
             'spreadsheet_id': os.getenv('GOOGLE_SHEETS_ID')  # Load Google Sheets ID from environment variable
         }
+    },
+
+    # test mode
+    'test': {
+        'inputs': 3,
+        'search_results': 10,
+        'search_llm_queries': 10
     }
 }
