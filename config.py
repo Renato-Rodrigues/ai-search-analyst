@@ -58,8 +58,8 @@ config = {
 
     # test mode
     'test': {
-        'inputs': 3,
-        'search_results': 10,
-        'search_llm_queries': 10
+        'inputs': 2,
+        'search_results': 2,
+        'search_llm_queries': 2
     }
 }

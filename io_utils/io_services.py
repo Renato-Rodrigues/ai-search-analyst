@@ -61,11 +61,20 @@ class IOService:
         with pd.ExcelWriter(excel_filename, engine='openpyxl') as writer:
             # Save each query result to its own sheet
             for sheet_name,value in dic.items():
-                df = pd.concat(value, ignore_index=True)
+                # Check if value is empty or contains only None
+                if not value or all(v is None for v in value):
+                    print(f"No valid data to save for sheet '{sheet_name}'. Skipping...")
+                    continue  # Skip this sheet if there's no valid data
+                try:
+                    df = pd.concat(value, ignore_index=True)
+                except ValueError as e:
+                    print(f"Error concatenating data for sheet '{sheet_name}': {e}")
+                    continue
                 # Ensure sheet name is valid (max 31 characters, no special characters)
                 sheet_name = ''.join(c for c in sheet_name if c.isalnum() or c in (' ', '_'))[:31]
                 df.to_excel(writer, sheet_name=sheet_name, index=False)
                 print(f"Results for '{sheet_name}' saved to sheet in {excel_filename}")
+
 
     def get_value(self, sheet_name: str, output_mode: str = 'default') -> Union[List[List[str]], List[Dict[str, Any]], List[Dict[str, List[str]]]]:
         data = self.io.get_value(sheet_name, output_mode)

@@ -43,6 +43,8 @@ class QueryProcessor:
             query_str = json.dumps(query)
             dependencies = set(dep.strip() for dep in re.findall(r'\[\[(.*?)\]\]', query_str))
             dependency_graph[i] = dependencies
+            if 'dependency' in query and query['dependency']:
+                dependencies.add(query['dependency'].strip())
 
         sorted_indices = []
         remaining_indices = set(range(len(all_queries)))
@@ -52,10 +54,12 @@ class QueryProcessor:
                 i for i in remaining_indices 
                 if not (dependency_graph[i] - available_variables)
             ]
-            print(independent_indices)
             if not independent_indices:
+                print("Circular dependency detected for the following queries:")
+                for i in remaining_indices:
+                    query = all_queries[i]
+                    print(f" - Title: {query.get('title')}, unsolved dependencies: {(dependency_graph[i] - available_variables)}")
                 raise ValueError("Circular dependency detected in queries")
-
             sorted_indices.extend(independent_indices)
             remaining_indices -= set(independent_indices)
 
@@ -65,6 +69,7 @@ class QueryProcessor:
                 dynamic_vars = self.parse_dynamic_var(query['dynamic_var'])
                 new_dynamic_vars = list(set(var if var.endswith('_set') else f"{var}_set" for var in dynamic_vars)) + dynamic_vars  # Concatenate original dynamic_vars
                 available_variables.update(new_dynamic_vars)
+                available_variables.add(query.get('title').strip())
 
         # Create a mapping from original index to sorted index
         index_mapping = {original: sorted for sorted, original in enumerate(sorted_indices)}
@@ -74,7 +79,7 @@ class QueryProcessor:
 
         return [all_queries[i] for i in sorted_indices], updated_dependency_graph
 
-    def process_single_query(self, query, replace_vars):
+    def process_single_query(self, query, replace_vars, chat=None):
         """Process a single query and return results."""
         listMode = 'array_str' if query in self.llm_queries else 'list_str' if query in self.search_queries else None
         out, replaced_items = utils.replace_placeholders(query, replace_vars, listMode)
@@ -83,10 +88,11 @@ class QueryProcessor:
         processed_query_df = pd.DataFrame(flatten_processed_query)
         
         if query in self.llm_queries:
-            out['result'] = ai_query(out['query'], out['role'], out['format'], self.ai_service, self.model, disable_cache=out['disable_cache'])
+            out['result'], out['chat_history'] = ai_query(query=out['query'], role=out.get('role', False), format=out.get('format', False), chat_history=chat, ai_service=self.ai_service, model=out.get('model', self.model), disable_cache=out.get('disable_cache', False))
         elif query in self.search_queries:
-            out['num_results'] = min(self.config['test']['search_results'], int(out['num_results'])) if self.config['test_mode'] else int(out['num_results'])
-            out['result'] = perform_search(out['search_query'], out['exactTerms'], out['orTerms'], out['num_results'], out['dateRestrict'], self.search_engine, disable_cache=out['disable_cache'])
+            out['num_results'] = max(10,min(self.config['test']['search_results'], int(out['num_results'])) if self.config['test_mode'] else int(out['num_results']))
+            out['result'] = perform_search(out['search_query'], out['exactTerms'], out['orTerms'], out['num_results'], out['dateRestrict'], self.search_engine, disable_cache=out.get('disable_cache', False))
+            out['chat_history'] = []
             for index in range(len(out['result'])):
                 out['result'][index] = {**replaced_items, **out['result'][index]} 
 
@@ -103,10 +109,14 @@ class QueryProcessor:
                     replace_vars[f"{var}_set"] = items
         
         # Create a new DataFrame for this query results
-        flatten_results = utils.flatten_json(out['result'])
-        results_df = pd.DataFrame(flatten_results)
+        try:
+            flatten_results = utils.flatten_json(out['result'])
+            results_df = pd.DataFrame(flatten_results)
+        except json.JSONDecodeError:  # Added exception handling
+            results_df = out['result']
+            pass 
 
-        return results_df, processed_query_df, replace_vars
+        return results_df, processed_query_df, replace_vars, out['chat_history']
 
     def process_queries(self):
         """
@@ -124,6 +134,7 @@ class QueryProcessor:
         
         # Initialize a dictionary to store DataFrames for each query
         query_results = {}
+        chat_history = {}
         query_results['queries'] = []
 
         # Initialize placeholders_variables with values directly obtained from inputs data
@@ -135,11 +146,22 @@ class QueryProcessor:
             tmp_placeholders_variables = {}
             query_results[query['title']] = []
             placeholders = {**tmp_placeholders_variables, **placeholders_variables}
-            if all(dep in placeholders for dep in dependencies):  # Check if all dependencies are available
+            #chat_history[query['title']] = {}
+            curr_chat_history = []
+            for dep in dependencies:
+                if isinstance(dep, str) and ',' in dep:  # Check for comma-separated values
+                    dep_titles = [title.strip() for title in dep.split(',')]
+                    for title in dep_titles:
+                        if title in chat_history:
+                            curr_chat_history.extend(chat_history[title])  # Append results for each title
+                elif dep in query_results:
+                    curr_chat_history.extend(chat_history[dep])  # Append results for the single dependency
+            if all(dep in {**placeholders, **query_results} for dep in dependencies):  # Check if all dependencies are available
                 print(f"Processing query: {query['title']}")
-                df, processed_query, query_placeholders_variables = self.process_single_query(query, replace_vars=placeholders)
+                df, processed_query, query_placeholders_variables, query_chat_history = self.process_single_query(query, replace_vars=placeholders, chat=curr_chat_history)
                 query_results['queries'].append(processed_query)
                 query_results[query['title']].append(df)
+                chat_history[query['title']] = query_chat_history
                 placeholders_variables = {**placeholders_variables, **query_placeholders_variables}
             else:
                 found = False
@@ -149,19 +171,20 @@ class QueryProcessor:
 
                 for combination in itertools.product(*values):
                     tmp_placeholders_variables = {key: value for key, value in zip(filtered_dependencies, combination)}
-                    print(tmp_placeholders_variables)
                     placeholders = {**placeholders_variables, **tmp_placeholders_variables}
 
-                    if all(dep in placeholders for dep in dependencies):
+                    if all(dep in {**placeholders, **query_results} for dep in dependencies):
                         found = True
                         print(f"Processing query: {query['title']}, for {combination}")
-                        df, processed_query, query_placeholders_variables = self.process_single_query(query, replace_vars=placeholders)
+                        df, processed_query, query_placeholders_variables, query_chat_history = self.process_single_query(query, replace_vars=placeholders, chat=curr_chat_history)
                         query_results['queries'].append(processed_query)
                         query_results[query['title']].append(df)
+                        chat_history[query['title']] = query_chat_history
                         placeholders_variables = {**placeholders_variables, **query_placeholders_variables}
 
                 if not found:
                     print(f"Warning: Missing placeholders for query: {query['title']}")
+                    print(f"Placeholders available: {placeholders.keys()} and {query_results.keys()}")
 
         return query_results
 

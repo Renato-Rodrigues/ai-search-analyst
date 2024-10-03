@@ -6,7 +6,7 @@ from ai_utils.aws import aws_query
 from ai_utils.anthropic import anthropic_query
 
 @cache_result
-def ai_query(query, role, format, ai_service, model):
+def ai_query(query, role=None, format=None, chat_history=None, ai_service='openai', model='gpt-4o-mini'):
     """Summarize content based on the selected AI service."""
     if ai_service == 'azure':
         return azure_query(query)
@@ -17,4 +17,4 @@ def ai_query(query, role, format, ai_service, model):
     elif ai_service == 'anthropic':
         return anthropic_query(query)
     else:
-        return gpt_query(query, role, format, model)
+        return gpt_query(query, role, format, chat_history, model)

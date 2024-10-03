@@ -4,59 +4,46 @@ import json
 from openai import OpenAI
 from config import config
 
-def gpt_query(query, role, format, model="gpt-4o-mini"):
-    """
-    Sends a query to the OpenAI GPT model and returns the processed result.
-
-    Parameters:
-    query (str): The main text prompt to send to the GPT model.
-    role (str): The system role instruction for the GPT model.
-    format (str): The desired format instruction or JSON schema for the GPT model's response.
-    model (str, optional): The GPT model to use. Defaults to "gpt-4o-mini".
-    
-    Returns:
-    dict or list: The processed result from the GPT model. If type is 'string', 
-                  the result is wrapped in a list.
-
-    Raises:
-    Exception: If there's an error in making the API call or processing the response.
-    """
+def gpt_query(query, role=None, format=None, chat_history=None, model="gpt-4o-mini"):
     client = OpenAI(api_key=config['ai_services']['gpt']['api_key'])
-    #print("asking gpt")
-    #print("json")
-    #print(format)
     
     try:
-        messages = [
-            {"role": "system", "content": role},
-            {"role": "user", "content": query}
-        ]
+        # Initialize messages with chat history if provided
+        messages = chat_history if chat_history else []
 
+        # Add the current system and user messages
+        messages.append(
+            {"role": "system", "content": role} if role else {"role": "system", "content": "Default system role"}
+        )
+        messages.append({"role": "user", "content": query})
+
+        # Use a default format if none is provided
+        if format:
+            response_format = json.loads(format)
+        else:
+            response_format = {"type": "text"}  # Set a default response format
+
+        # Send the request to the GPT model
         response = client.chat.completions.create(
             model=model,
             messages=messages,
-            response_format=json.loads(format)
+            response_format=response_format
         )
-            #top_p=top_p,
-            #frequency_penalty=frequency_penalty,
-            #presence_penalty=presence_penalty,
-            #temperature=temperature,
-        
-        contents = response.choices[0].message.content.strip()
-        #print("Raw GPT response:")
-        #print(result)  # Add this line to print the raw response
-        
-        result = json.loads(contents)
 
-        # Format the result based on the type
-        if isinstance(result, str):
-            return [result]
-        elif isinstance(result, dict) and 'result' in result:
-            return result['result']
-        else:
-            return result
+        # Extract the assistant's response
+        assistant_response = response.choices[0].message.content.strip()
+
+        # Include the assistant's response in the messages for future use
+        messages.append({"role": "assistant", "content": assistant_response})
+
+        try:
+            assistant_response = json.loads(assistant_response)
+        except json.JSONDecodeError:  # Added exception handling
+            pass  # Do nothing if an error occurs
+        
+        return assistant_response, messages
         
     except Exception as e:
         error_message = f"Error in GPT query: {str(e)}"
         print(error_message)
-        return {'error': error_message}  # Return error in a format that won't be cached
+        return {'error': error_message}, []  # Return error in a format that won't be cached
