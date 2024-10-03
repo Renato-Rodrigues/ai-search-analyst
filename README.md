@@ -42,6 +42,11 @@ project_folder/
 │   ├── google_search.py    # Handles Google Custom Search API operations
 │   └── search_engine.py    # Orchestrates search engine selection and execution
 │
+├── utils/
+│   ├── cache_utils.py      # Cache functions to reduce API calls 
+│   ├── query_processor.py  # Core functionalities for processing queries
+│   └── utils.py            # Utility functions for the project
+│
 ├── .env                    # Stores environment variables (not tracked in git)
 ├── .gitignore              # Specifies intentionally untracked files to ignore
 ├── api_cache.json          # Caches API responses to reduce API calls (not tracked in git)
@@ -52,8 +57,7 @@ project_folder/
 ├── config.py               # Stores configuration options for the application
 ├── main.py                 # Main entry point of the application
 ├── requirements.txt        # Lists all Python package dependencies
-├── token.pickle            # Stores Google API access tokens for authentication (not tracked in git)
-└── utils.py                # Utility functions for the project
+└── token.pickle            # Stores Google API access tokens for authentication (not tracked in git)
 ```
 
 ## Setup

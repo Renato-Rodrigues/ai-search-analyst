@@ -73,7 +73,9 @@ class GoogleSheetsIO:
             if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
                 value = [{"Error": "Invalid table format"}]
         
-        else:  # For both 'string' and any other non-table type
+        elif value_type == 'string':
+            value = [str(value)]
+        else:
             value = value if isinstance(value, list) else [value]
 
         # Prepare values for writing

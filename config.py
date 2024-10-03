@@ -14,7 +14,7 @@ config = {
     'ai_services': {
         'gpt': {
             'api_key': os.getenv('GPT_API_KEY'),
-            'model': 'gpt-3.5-turbo' # gpt-3.5-turbo, gpt-4o, gpt-4o-mini
+            'model': 'gpt-4o-mini' # gpt-4o, gpt-4o-mini (required to structured output)
         },
         'azure': {
             'api_key': os.getenv('AZURE_API_KEY'),

@@ -1,6 +1,7 @@
 import sqlite3
 from typing import Any, Dict, List, Union
 from io_utils.google_sheets import GoogleSheetsIO
+import pandas as pd
 
 class IODatabase:
     def __init__(self, db_path: str = 'io_operations.db'):
@@ -49,6 +50,22 @@ class IOService:
         self.db = IODatabase()
         self.cleared_sheets = set()
         self.io = GoogleSheetsIO()
+
+    def save_to_excel(self, excel_filename, dic):
+        """
+        Saves dictionary to an Excel file.
+
+        :param excel_filename: The name of the Excel file to save the results.
+        :param dic: Dictionary containing sheet names as keys and sheet content as value.
+        """
+        with pd.ExcelWriter(excel_filename, engine='openpyxl') as writer:
+            # Save each query result to its own sheet
+            for sheet_name,value in dic.items():
+                df = pd.concat(value, ignore_index=True)
+                # Ensure sheet name is valid (max 31 characters, no special characters)
+                sheet_name = ''.join(c for c in sheet_name if c.isalnum() or c in (' ', '_'))[:31]
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
+                print(f"Results for '{sheet_name}' saved to sheet in {excel_filename}")
 
     def get_value(self, sheet_name: str, output_mode: str = 'default') -> Union[List[List[str]], List[Dict[str, Any]], List[Dict[str, List[str]]]]:
         data = self.io.get_value(sheet_name, output_mode)

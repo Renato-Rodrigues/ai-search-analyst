@@ -14,17 +14,19 @@ def cache_result(func):
         # Generate a unique cache key
         cache_key = f"{func.__name__}:{json.dumps(args)}:{json.dumps({k: v for k, v in sorted(kwargs.items()) if k != 'disable_cache'})}"
         
-        print(f"Debug: Cache key: {cache_key}")  # Debug print
+        #print(f"Debug: Cache key: {cache_key}")  # Debug print
 
         # Load the cache
         cache = load_cache()
         
         # Check if result is in cache and is not empty
         if cache_key in cache and is_valid_cache_value(cache[cache_key]):
-            print(f"Cache hit for {cache_key}")
+            print("Cache hit")
+            #print(f"Cache hit for {cache_key}")
             return cache[cache_key]
         
-        print(f"Cache miss for {cache_key}")  # Debug print
+        print("Cache miss")
+        #print(f"Cache miss for {cache_key}")  # Debug print
         
         # If not in cache or cache is empty, call the function
         result = func(*args, **kwargs)
@@ -34,7 +36,8 @@ def cache_result(func):
             cache[cache_key] = result
             save_cache(cache)
         else:
-            print(f"Not caching result for {cache_key}")
+            print("Not caching results")
+            #print(f"Not caching result for {cache_key}")
         
         return result
     return wrapper
