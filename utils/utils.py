@@ -94,6 +94,22 @@ class Utils:
         recursive_flatten(data, {})
 
         return result
+    
+    def find_placeholders(self,dict):
+        """
+        Find all strings in the format [[string]] in any of the values of the dictionary.
+        Args: out (dict): The dictionary to search through.
+        
+        Returns: list: A list of strings found in the format [[string]].
+        """
+        matches = []
+        pattern = r'\[\[(.*?)\]\]'  # Regex pattern to match [[string]]
+
+        for value in dict.values():
+            found = re.findall(pattern, value)  # Find all matches in the current value
+            matches.extend(found)  # Add found matches to the list
+
+        return list(set(matches)) 
 
 utils = Utils()
 

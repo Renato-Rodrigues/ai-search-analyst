@@ -58,6 +58,7 @@ class IOService:
         :param excel_filename: The name of the Excel file to save the results.
         :param dic: Dictionary containing sheet names as keys and sheet content as value.
         """
+        
         with pd.ExcelWriter(excel_filename, engine='openpyxl') as writer:
             # Save each query result to its own sheet
             for sheet_name,value in dic.items():
@@ -66,7 +67,7 @@ class IOService:
                     print(f"No valid data to save for sheet '{sheet_name}'. Skipping...")
                     continue  # Skip this sheet if there's no valid data
                 try:
-                    df = pd.concat(value, ignore_index=True)
+                    df = pd.DataFrame(value)
                 except ValueError as e:
                     print(f"Error concatenating data for sheet '{sheet_name}': {e}")
                     continue

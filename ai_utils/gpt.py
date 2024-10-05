@@ -12,10 +12,12 @@ def gpt_query(query, role=None, format=None, chat_history=None, model="gpt-4o-mi
         messages = chat_history if chat_history else []
 
         # Add the current system and user messages
-        messages.append(
+        this_chat = []
+        this_chat.append(
             {"role": "system", "content": role} if role else {"role": "system", "content": "Default system role"}
         )
-        messages.append({"role": "user", "content": query})
+        this_chat.append({"role": "user", "content": query})
+        messages.extend(this_chat) 
 
         # Use a default format if none is provided
         if format:
@@ -35,15 +37,17 @@ def gpt_query(query, role=None, format=None, chat_history=None, model="gpt-4o-mi
 
         # Include the assistant's response in the messages for future use
         messages.append({"role": "assistant", "content": assistant_response})
-
+        this_chat.append({"role": "assistant", "content": assistant_response})
+        
         try:
             assistant_response = json.loads(assistant_response)
         except json.JSONDecodeError:  # Added exception handling
             pass  # Do nothing if an error occurs
         
-        return assistant_response, messages
+        return assistant_response, this_chat, messages
         
     except Exception as e:
         error_message = f"Error in GPT query: {str(e)}"
         print(error_message)
-        return {'error': error_message}, []  # Return error in a format that won't be cached
+        #print(messages)
+        return {'error': error_message}, [], []  # Return error in a format that won't be cached

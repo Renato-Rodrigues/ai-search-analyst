@@ -1,4 +1,4 @@
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 from config import config
 from ai_utils.ai_services import ai_query
@@ -11,6 +11,7 @@ def main():
     
     # Read user defined inputs
     inputs = io_service.get_value('inputs', output_mode='list_dict_column')
+    inputs = [{k: [x for x in v if x] for k, v in entry.items()} for entry in inputs] # Remove empty string values in a single line
     if config['test_mode']:
         inputs = [{k: v[:config['test']['inputs']] for k, v in d.items()} for d in inputs]
     llm_queries = io_service.get_value('llm_queries', output_mode='list_dict')
@@ -27,3 +28,16 @@ if __name__ == "__main__":
     main()
 
 
+#reload class
+#import importlib
+#import utils.query_processor
+
+# Reload the module to reflect changes
+#importlib.reload(utils.query_processor)
+
+# Re-import the class after reloading
+#from utils.query_processor import QueryProcessor
+
+# Create a new instance of MyClass
+#processor = QueryProcessor(inputs, llm_queries, search_queries, config)
+#self = processor
