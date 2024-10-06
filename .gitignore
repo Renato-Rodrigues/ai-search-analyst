@@ -4,4 +4,6 @@ credentials.json
 token.pickle
 __pycache__
 io_operations.db
-*.xlsx
+data/*.xlsx
+data/*.json
+data/*.jsonl

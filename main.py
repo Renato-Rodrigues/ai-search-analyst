@@ -22,7 +22,7 @@ def main():
     query_results = processor.process_queries()
 
     # Save all query results to the same Excel file
-    io_service.save_to_excel('query_results.xlsx', query_results)
+    io_service.save_to_excel('data/query_results.xlsx', query_results)
 
 if __name__ == "__main__":
     main()
