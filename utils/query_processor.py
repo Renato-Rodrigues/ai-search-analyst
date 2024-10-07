@@ -118,9 +118,8 @@ class QueryProcessor:
                 queries_made.append({**replaced_items, **upd_query})
                 number_of_results = max(10, min(self.config['test']['search_results'], int(query['query'].get('num_results')) or 100) if self.config['test_mode'] else int(query['query'].get('num_results') or self.num_results))
                 res = perform_search(upd_query.get('search_query') or '', upd_query.get('exactTerms') or '', upd_query.get('orTerms') or '', number_of_results, query['query'].get('dateRestrict') or self.dateRestrict, query['query'].get('search_engine') or self.search_engine, disable_cache=query['query'].get('disable_cache') or self.disable_cache)
-                for res_index in range(len(res)):
-                    prepared_queries[query_index]['result'] = { **replaced_items, **res }
-                    results.extend(prepared_queries[query_index]['result'])
+                prepared_queries[query_index]['result'] = [{ **replaced_items, **e } for e in res]
+                results.extend(prepared_queries[query_index]['result'])
             # solving llm queries either in batch mode or in sequential mode
             elif query['raw_query'] in self.llm_queries:
                 llm_query = True
@@ -196,7 +195,7 @@ class QueryProcessor:
 
         # Determine which queries to process based on test_mode
         queries_to_process = sorted_queries if self.config['test_mode'] else sorted_queries
-        #queries_to_process = sorted_queries[:1] if self.config['test_mode'] else sorted_queries
+        #queries_to_process = sorted_queries[:3] if self.config['test_mode'] else sorted_queries
         
         # Initialize values directly obtained from inputs data
         input_sets = {f"{k}_set": v for item in self.inputs for k, v in item.items()} 

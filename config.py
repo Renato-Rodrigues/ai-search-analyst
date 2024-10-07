@@ -5,7 +5,7 @@ import os
 load_dotenv()
 
 config = {
-    'test_mode': 'false',  # Set to True for test mode, False for production. This limits the serach api calls to avoid excessive charges on testing phase
+    'test_mode': 'true',  # Set to True for test mode, False for production. This limits the serach api calls to avoid excessive charges on testing phase
 
     'default_ai_service': 'gpt',  # Default AI service: 'gpt', 'azure', 'gemini', 'aws', 'anthropic'
     'default_search_engine': 'google',  # Default search engine: 'google', 'bing'
@@ -65,7 +65,7 @@ config = {
 
     # test mode
     'test': {
-        'inputs': 20,
+        'inputs': 1,
         'search_results': 10
     }
 }
