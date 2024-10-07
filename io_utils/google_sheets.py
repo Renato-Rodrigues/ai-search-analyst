@@ -118,10 +118,10 @@ class GoogleSheetsIO:
                 body=value_range_body
             )
             response = request.execute()
-            print(f"Data written to '{sheet_name}'!{start_cell}")
+            print(f"[Google Sheet] Data written to '{sheet_name}'!{start_cell}")
             return response
         except HttpError as error:
-            print(f"An error occurred: {error}")
+            print(f"[Google Sheet] An error occurred: {error}")
             raise
 
     def ensure_sheet_exists(self, sheet_name, clear_if_exists=False, cleared_sheets=None):
@@ -164,11 +164,11 @@ class GoogleSheetsIO:
                 ).execute()
                 if cleared_sheets is not None:
                     cleared_sheets.add(sheet_name)
-                print(f"Sheet '{sheet_name}' cleared.")
+                print(f"[Google Sheet] Sheet '{sheet_name}' cleared.")
             
             return True
         except HttpError as error:
-            print(f"An error occurred while checking/creating/clearing the sheet: {error}")
+            print(f"[Google Sheet] An error occurred while checking/creating/clearing the sheet: {error}")
             return False
 
     def find_row_with_content(self, sheet_name, column, content='last'):
@@ -205,7 +205,7 @@ class GoogleSheetsIO:
             return 0
         
         except HttpError as error:
-            print(f"An error occurred: {error}")
+            print(f"[Google Sheet] An error occurred: {error}")
             raise
 
 

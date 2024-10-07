@@ -65,7 +65,7 @@ config = {
 
     # test mode
     'test': {
-        'inputs': 1,
+        'inputs': 7,
         'search_results': 10
     }
 }

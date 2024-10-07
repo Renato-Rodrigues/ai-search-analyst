@@ -66,7 +66,7 @@ def gpt_query(queries, role=None, format=None, chat_history=None, model="gpt-4o-
         
         now = datetime.datetime.now()
         time_stamp = now.strftime("%Y-%m-%d_%H-%M-%S")
-        file_name = f"data/batch_tasks_{time_stamp}.jsonl"
+        file_name = f"data/batch_requests/batch_tasks_{time_stamp}.jsonl"
 
         with open(file_name, 'w') as file:
             for obj in messages_batch:
@@ -102,7 +102,7 @@ def gpt_query(queries, role=None, format=None, chat_history=None, model="gpt-4o-
             result_file_id = batch_job.output_file_id
             if result_file_id:
                 result = client.files.content(result_file_id).content
-                result_file_name = f"data/batch_tasks_{time_stamp}_results.jsonl"
+                result_file_name = f"data/batch_requests/batch_tasks_{time_stamp}_results.jsonl"
                 with open(result_file_name, 'wb') as file:
                     file.write(result)
             else:
@@ -110,7 +110,7 @@ def gpt_query(queries, role=None, format=None, chat_history=None, model="gpt-4o-
                 print(f"There was probably an error in the queries submited file {file_name}")
                 error_file_id = batch_job.error_file_id
                 error = client.files.content(error_file_id).content
-                error_file_name = f"data/batch_tasks_{time_stamp}_error.jsonl"
+                error_file_name = f"data/batch_requests/batch_tasks_{time_stamp}_error.jsonl"
                 with open(error_file_name, 'wb') as file:
                     file.write(error)
                 print(f"You can find more details at the file {error_file_name}")
@@ -153,15 +153,17 @@ def gpt_query(queries, role=None, format=None, chat_history=None, model="gpt-4o-
         responses = []
         current_chat_instance = []
         query = queries[0]
+        query_role = role[0] if isinstance(role, list) else role 
+        query_format = {"type": "text"} if not format else json.loads(format[0]) if isinstance(role, list) else json.loads(format)
         try:
             messages = chat_history[0] + [  # Include the chat history for this specific query
-                {"role": "system", "content": role or "Default system role"},
+                {"role": "system", "content": query_role or "Default system role"},
                 {"role": "user", "content": query}
             ]
             response = client.chat.completions.create(
                 model=model,
                 messages=messages,
-                response_format= {"type": "text"} if not format else json.loads(format)
+                response_format= query_format
             )
             assistant_response = response.choices[0].message.content.strip()
             responses.append(assistant_response)

@@ -59,7 +59,7 @@ class QueryProcessor:
                 if not (dependency_graph[i] - available_variables)
             ]
             if not independent_indices:
-                print("Circular dependency detected for the following queries:")
+                print("[Query Processor] Circular dependency detected for the following queries:")
                 for i in remaining_indices:
                     query = all_queries[i]
                     print(f" - Title: {query.get('title')}, unsolved dependencies: {(dependency_graph[i] - available_variables)}")
@@ -110,8 +110,7 @@ class QueryProcessor:
         for query_index, query in enumerate(prepared_queries):
             # solving search queries sequentially
             if query['raw_query'] in self.search_queries:
-                llm_query = False
-                print(query["message"])
+                print(f"[Query Processor] {query['message']}")
                 upd_query, replaced_items = utils.replace_placeholders(query["raw_query"], variables=query["replace_vars"], listMode='list_str') # replacing variable placeholders
                 prepared_queries[query_index]['replaced_items'] = {**replaced_items}
                 prepared_queries[query_index]['query'] = {**upd_query}
@@ -122,17 +121,16 @@ class QueryProcessor:
                 results.extend(prepared_queries[query_index]['result'])
             # solving llm queries either in batch mode or in sequential mode
             elif query['raw_query'] in self.llm_queries:
-                llm_query = True
                 upd_query, replaced_items = utils.replace_placeholders(query["raw_query"], variables=query["replace_vars"], listMode='array_str') # replacing variable placeholders
                 prepared_queries[query_index]['replaced_items'] = {**replaced_items}
                 prepared_queries[query_index]['query'] = {**upd_query}
                 queries_made.append({**replaced_items, **upd_query})
                 if not batch_process or len(prepared_queries)==1:
                     # Process queries individually
-                    print(query["message"])
+                    print(f"[Query Processor] {query['message']}")
                     responses, current_chat_instance, full_history = ai_query(queries=upd_query.get('query'), role=upd_query.get('role') or None, format=upd_query.get('format') or None, chat_history=query.get('chat') or None, ai_service=query['query'].get('model') or self.ai_service, model=query['query'].get('model') or self.model, disable_cache=query['query'].get('disable_cache') or self.disable_cache)
                     try:
-                        res = json.loads(responses[0])
+                        res = json.loads(responses[0] if isinstance(responses, list) else responses)
                     except json.JSONDecodeError:  # Added exception handling
                         pass  # Do nothing if an error occurs 
                     if 'result' in res: #results are included in a result dicitionary due to the json schema I use
@@ -144,7 +142,7 @@ class QueryProcessor:
         
         if batch_process and len(prepared_queries)>1: 
             # Process queries as batch
-            print("Starting batch call to llm")
+            print("[Query Processor] Starting batch call to llm")
             queries = [d["query"].get("query") or [] for d in prepared_queries]
             roles = [d["query"].get("role") or [] for d in prepared_queries]
             formats = [d["query"].get("format") or [] for d in prepared_queries] 
@@ -195,7 +193,7 @@ class QueryProcessor:
 
         # Determine which queries to process based on test_mode
         queries_to_process = sorted_queries if self.config['test_mode'] else sorted_queries
-        #queries_to_process = sorted_queries[:3] if self.config['test_mode'] else sorted_queries
+        #queries_to_process = sorted_queries[:2] if self.config['test_mode'] else sorted_queries
         
         # Initialize values directly obtained from inputs data
         input_sets = {f"{k}_set": v for item in self.inputs for k, v in item.items()} 
@@ -211,7 +209,7 @@ class QueryProcessor:
         
         for query_index, query in enumerate(queries_to_process):
             current_query = query['title']
-            print(f"Solving Query number: {query_index+1} of {len(queries_to_process)}, named: {current_query}")
+            print(f"[Query Processor] Solving Query number: {query_index+1} of {len(queries_to_process)}, named: {current_query}")
             prepared_queries = []  
             query_results[current_query] = []
             chat_history[current_query] = []
@@ -269,9 +267,11 @@ class QueryProcessor:
                 chat_history[current_query].extend(query_chat_history)
                 available_dependencies_set = {**available_dependencies_set, **query_solved_dependencies}
             else:
-                print(f"Warning: Not capable of solving dependency for query {current_query}")
+                print(f"[Query Processor] Warning: Not capable of solving dependency for query {current_query}")
                 missing = [dep for dep in dependencies if dep not in solved_dependencies]
-                print(f"Missing dependencies: {missing} required ({dependencies}), available (solved_dependencies).")
+                print(f"  - missing dependencies:   {missing}")
+                print(f"  - required dependencies:  {dependencies}")
+                print(f"  - available dependencies: {solved_dependencies}")
 
         return query_results
 

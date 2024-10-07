@@ -26,11 +26,21 @@ project_folder/
 │
 ├── ai_utils/
 │   ├── ai_services.py      # Orchestrates AI service selection and query execution
-│   ├── anthropic.py        # Handles interactions with Anthropic Claude API
-│   ├── aws.py              # Manages AWS AI service integration
-│   ├── azure.py            # Implements Azure OpenAI API functionality
-│   ├── gemini.py           # Interfaces with Google Gemini API
+│   ├── anthropic.py        # Handles interactions with Anthropic Claude API (draft)
+│   ├── aws.py              # Manages AWS AI service integration (draft)
+│   ├── azure.py            # Implements Azure OpenAI API functionality (draft)
+│   ├── gemini.py           # Interfaces with Google Gemini API (draft)
 │   └── gpt.py              # Handles OpenAI GPT API interactions
+│
+├── cache/
+│   ├── cache_database.py   # Database class to database operations to save the cache
+│   ├── cache.py            # Cache functions to reduce API calls
+│   └── cache.db            # Cache database file (not tracked in git) 
+│
+├── data/
+│   ├── query_results.xlsx  # Excel file with results from seraches and queries
+│   └── batch_requests      # Folder to save batch LLM request calls and results
+│       └── *.jsonl         # Requests and results for batch LLM calls (not tracked in git) 
 │
 ├── io_utils/
 │   ├── io_services.py      # Manages IO service selection and execution
@@ -38,7 +48,7 @@ project_folder/
 │   └── google_sheets.py    # Handles reading from and writing to Google Sheets
 │
 ├── search_utils/
-│   ├── bing_search.py      # Implements Bing Search API functionality
+│   ├── bing_search.py      # Implements Bing Search API functionality (draft)
 │   ├── google_search.py    # Handles Google Custom Search API operations
 │   └── search_engine.py    # Orchestrates search engine selection and execution
 │
@@ -51,7 +61,6 @@ project_folder/
 ├── .gitignore              # Specifies intentionally untracked files to ignore
 ├── api_cache.json          # Caches API responses to reduce API calls (not tracked in git)
 ├── credentials.json        # Stores Google API credentials (not tracked in git)
-├── io_operations.py        # database with io operation results
 ├── LICENSE                 # MIT License
 ├── README.md               # Provides an overview and instructions for the project
 ├── config.py               # Stores configuration options for the application

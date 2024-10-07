@@ -66,7 +66,7 @@ def perform_google_search(search_query, exactTerms, orTerms, num_results, dateRe
             warnings.warn(error_message, UserWarning)
             return {'error': error_message}  # Return error in a format that won't be cached
         
-        print(f"Performing search for: {params['q']}, exactTerms: {params['exactTerms']}, orTerms: {params['orTerms']}") # Log the search parameters
+        print(f"[Google Search] Performing search for: {params['q']}, exactTerms: {params['exactTerms']}, orTerms: {params['orTerms']}") # Log the search parameters
             
         search_results = response.json().get('items', [])
         
