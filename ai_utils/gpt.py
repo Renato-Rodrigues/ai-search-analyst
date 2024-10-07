@@ -43,8 +43,9 @@ def gpt_query(queries, role=None, format=None, chat_history=None, model="gpt-4o-
     if batch_process:
         # Collect all messages for the batch request
         messages_batch = []
-        
         for index, query in enumerate(queries):
+            query_role = "Default system role" if not role else role[index] if isinstance(role, list) else role 
+            query_format = {"type": "text"} if not format else json.loads(format[index]) if isinstance(format, list) else json.loads(format)
             # Prepare the system and user messages for the batch with custom_id
             task = {
                 "custom_id": f"query_{index}",
@@ -54,11 +55,11 @@ def gpt_query(queries, role=None, format=None, chat_history=None, model="gpt-4o-
                     # This is what you would have in your Chat Completions API call
                     "model": model,
                     "messages": chat_history[index] + [  # Append the chat history for this specific query
-                        {"role": "system", "content": role[index] or "Default system role"},
+                        {"role": "system", "content": query_role},
                         {"role": "user", "content": query}
                     ],
                     #"temperature": 0.1,
-                    "response_format": {"type": "text"} if not format else json.loads(format[index])
+                    "response_format": query_format
                 }
             }
             json.loads(format[index])
@@ -88,14 +89,14 @@ def gpt_query(queries, role=None, format=None, chat_history=None, model="gpt-4o-
             while True:
                 batch_job = client.batches.retrieve(batch_job.id)
                 if batch_job.status == "failed":
-                    print(f"Job {batch_job.id} has failed with error {batch_job.errors}")
+                    print(f"[OpenAI API] Job {batch_job.id} has failed with error {batch_job.errors}")
                     return [{'error': batch_job.errors}], None, None
                 elif batch_job.status == 'in_progress':
-                    print(f'Job {batch_job.id} is in progress, {batch_job.request_counts.completed}/{batch_job.request_counts.total} requests completed')
+                    print(f'[OpenAI API] Job {batch_job.id} is in progress, {batch_job.request_counts.completed}/{batch_job.request_counts.total} requests completed')
                 elif batch_job.status == 'finalizing':
-                    print(f'Job {batch_job.id} is finalizing, waiting for the output file id')
+                    print(f'[OpenAI API] Job {batch_job.id} is finalizing, waiting for the output file id')
                 elif batch_job.status == "completed":
-                    print(f"Job {batch_job.id} has finished")
+                    print(f"[OpenAI API] Job {batch_job.id} has finished")
                     break
                 time.sleep(int(config['batch_sleep']))
             
@@ -106,14 +107,14 @@ def gpt_query(queries, role=None, format=None, chat_history=None, model="gpt-4o-
                 with open(result_file_name, 'wb') as file:
                     file.write(result)
             else:
-                print(f"Job {batch_job.id} has failed.")
-                print(f"There was probably an error in the queries submited file {file_name}")
+                print(f"[OpenAI API] Job {batch_job.id} has failed.")
+                print(f"[OpenAI API] There was probably an error in the queries submited file {file_name}")
                 error_file_id = batch_job.error_file_id
                 error = client.files.content(error_file_id).content
                 error_file_name = f"data/batch_requests/batch_tasks_{time_stamp}_error.jsonl"
                 with open(error_file_name, 'wb') as file:
                     file.write(error)
-                print(f"You can find more details at the file {error_file_name}")
+                print(f"[OpenAI API] You can find more details at the file {error_file_name}")
                 return [{'error': batch_job.errors}], None, None
 
             results = []
@@ -190,9 +191,3 @@ def gpt_query(queries, role=None, format=None, chat_history=None, model="gpt-4o-
                 
         return responses, current_chat_instance, full_history
 
-
-#    except Exception as e:
-#        error_message = f"Error in GPT query: {str(e)}"
-#        print(error_message)
-#        #print(messages)
-#        return {'error': error_message}, [], []  # Return error in a format that won't be cached

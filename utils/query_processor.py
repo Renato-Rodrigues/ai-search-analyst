@@ -111,6 +111,7 @@ class QueryProcessor:
             # solving search queries sequentially
             if query['raw_query'] in self.search_queries:
                 print(f"[Query Processor] {query['message']}")
+                batch_process = False
                 upd_query, replaced_items = utils.replace_placeholders(query["raw_query"], variables=query["replace_vars"], listMode='list_str') # replacing variable placeholders
                 prepared_queries[query_index]['replaced_items'] = {**replaced_items}
                 prepared_queries[query_index]['query'] = {**upd_query}
@@ -141,12 +142,10 @@ class QueryProcessor:
                     chat_history.append({ **prepared_queries[query_index]['replaced_items'], 'chat_history': current_chat_instance[0] })
         
         if batch_process and len(prepared_queries)>1: 
-            # Process queries as batch
-            print("[Query Processor] Starting batch call to llm")
-            queries = [d["query"].get("query") or [] for d in prepared_queries]
-            roles = [d["query"].get("role") or [] for d in prepared_queries]
-            formats = [d["query"].get("format") or [] for d in prepared_queries] 
-            chart_histories = [d["query"].get("chart_history") or [] for d in prepared_queries]
+            queries = [d["query"].get("query", []) for d in prepared_queries]
+            roles = [d["query"].get("role", []) for d in prepared_queries]
+            formats = [d["query"].get("format", []) for d in prepared_queries] 
+            chart_histories = [d["query"].get("chart_history", []) for d in prepared_queries]
             responses, current_chat_instance, full_history = ai_query(queries=queries, role=roles, format=formats, chat_history=chart_histories, ai_service=prepared_queries[0]['query'].get('ai_service') or self.ai_service, model=prepared_queries[0]['query'].get('model') or self.model, disable_cache=prepared_queries[0]['query'].get('disable_cache') or self.disable_cache)
             for query_index, query in enumerate(prepared_queries):
                 try:
@@ -193,7 +192,7 @@ class QueryProcessor:
 
         # Determine which queries to process based on test_mode
         queries_to_process = sorted_queries if self.config['test_mode'] else sorted_queries
-        #queries_to_process = sorted_queries[:2] if self.config['test_mode'] else sorted_queries
+        queries_to_process = sorted_queries[:4] if self.config['test_mode'] else sorted_queries
         
         # Initialize values directly obtained from inputs data
         input_sets = {f"{k}_set": v for item in self.inputs for k, v in item.items()} 
@@ -251,14 +250,24 @@ class QueryProcessor:
                         solved_queries.add(current_query)
                     else:
                         remaining_dependencies = [dep for dep in dependencies if not dep in input_dependencies+loop_dependencies+list(solved_queries)]
-                        remaining_sets = {k[:-4]: v for k, v in available_dependencies_set.items() if k[:-4] in remaining_dependencies}
+                        tmp_remaining_group_set = {}
+                        for group in remaining_dependencies:
+                            remaining_group_sets = {k:v for k,v in available_dependencies_set.items() if k == f"{group}_group"}[f"{group}_group"]
+                            filter_remaining_group_sets = [ item for item in remaining_group_sets if all(item.get(key) == value for key, value in tmp_set.items()) ]
+                            filter_remaining_group = [item[f"{group}_set"] for item in filter_remaining_group_sets]
+                            flattened_remaining_group = [link for sublist in filter_remaining_group for link in sublist]
+                            new_tmp_remaining_group_set = {f"{group}_group":flattened_remaining_group}
+                            tmp_remaining_group_set = {**tmp_remaining_group_set, **new_tmp_remaining_group_set} 
+                        solved_dependencies = list(available_dependencies_set.keys()) + list(tmp_set.keys()) + list(tmp_group_set.keys())  + list(solved_queries) + remaining_dependencies
+                        solved_dependencies_set = {**available_dependencies_set, **tmp_set, **tmp_group_set, **tmp_remaining_group_set}
+                        #remaining_sets = {k[:-4]: v for k, v in available_dependencies_set.items() if k[:-4] in remaining_dependencies}
                         tmp2_set = {}
-                        for remaining_combination in itertools.product(*list(remaining_sets.values())):
-                            tmp2_set = {k: v for k, v in zip(remaining_sets.keys(), remaining_combination)}
+                        for remaining_combination in itertools.product(*list(tmp_remaining_group_set.values())):
+                            tmp2_set = {k: v for k, v in zip(remaining_dependencies, remaining_combination)}
                             solved_dependencies = list(available_dependencies_set.keys()) + list(tmp_set.keys()) + list(tmp_group_set.keys())  + list(tmp2_set.keys()) + list(solved_queries)
                             solved_dependencies_set = {**available_dependencies_set, **tmp_set, **tmp_group_set, **tmp2_set}
                             if all(dep in solved_dependencies for dep in dependencies):
-                                prepared_queries.append({"message": f"Solving query: {current_query} with {input_combination} and {remaining_combination}", "raw_query":query, "replace_vars":solved_dependencies_set, "chat":self.filter_chat_history(curr_chat_history, {**tmp_set, **tmp2_set}), "filtered_out_dependencies":list(loop_sets.keys()) + list(remaining_sets.keys())})
+                                prepared_queries.append({"message": f"Solving query: {current_query} with {input_combination} and {remaining_combination}", "raw_query":query, "replace_vars":solved_dependencies_set, "chat":self.filter_chat_history(curr_chat_history, {**tmp_set, **tmp2_set}), "filtered_out_dependencies":list(loop_sets.keys()) + list(tmp_remaining_group_set.keys())})
                                 solved_queries.add(current_query)
             if current_query in solved_queries:
                 results, queries_made, query_solved_dependencies, query_chat_history = self.process_prepared_queries(prepared_queries, batch_process=query.get('batch_process') or self.batch_process)
@@ -272,7 +281,7 @@ class QueryProcessor:
                 print(f"  - missing dependencies:   {missing}")
                 print(f"  - required dependencies:  {dependencies}")
                 print(f"  - available dependencies: {solved_dependencies}")
-
+                
         return query_results
 
 
