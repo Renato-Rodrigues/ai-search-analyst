@@ -37,8 +37,8 @@ def gpt_query(queries, role=None, format=None, chat_history=None, model="gpt-4o-
     if isinstance(queries, str):
         queries = [queries]
     
-    # Determine whether to process in batch or individually based on the number of queries
-    batch_process = len(queries) > 1
+    # Determine whether to process in batch or individually based
+    batch_process = config['llm_batch_process']
 
     if batch_process:
         # Collect all messages for the batch request
@@ -156,8 +156,9 @@ def gpt_query(queries, role=None, format=None, chat_history=None, model="gpt-4o-
         query = queries[0]
         query_role = role[0] if isinstance(role, list) else role 
         query_format = {"type": "text"} if not format else json.loads(format[0]) if isinstance(role, list) else json.loads(format)
+        query_chat_history = chat_history[0] if isinstance(chat_history[0], list) else chat_history 
         try:
-            messages = chat_history[0] + [  # Include the chat history for this specific query
+            messages = query_chat_history + [  # Include the chat history for this specific query
                 {"role": "system", "content": query_role or "Default system role"},
                 {"role": "user", "content": query}
             ]
@@ -190,4 +191,6 @@ def gpt_query(queries, role=None, format=None, chat_history=None, model="gpt-4o-
                 full_history.extend(chat)
                 
         return responses, current_chat_instance, full_history
+
+
 

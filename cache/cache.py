@@ -38,8 +38,8 @@ def cache_function(batch_mode=False, disable_cache=False):
                 print("[Cache] Cache is disabled. Executing function without loading or saving cache.")
                 return func(*args, **kwargs)
 
-            # Check if batch mode should be enabled based on any list in args or kwargs
-            is_batch_mode = batch_mode or any(isinstance(arg, list) for arg in args) or any(isinstance(v, list) for v in kwargs.values())
+            # Check if batch mode should be enabled based the first element of args or kwargs being a list
+            is_batch_mode = batch_mode and (isinstance(args[0] if args else None, list) or isinstance(next(iter(kwargs.values())), list))
 
             if is_batch_mode:
                 # Find the longest list for batch mode (either from args or kwargs)
@@ -61,18 +61,11 @@ def cache_function(batch_mode=False, disable_cache=False):
                     for i, arg in enumerate(current_args):
                         if isinstance(arg, list):
                             current_args[i] = arg[0] if len(arg) == 1 else arg[index]
-                    #for i, arg in enumerate(current_args):
-                    #    if isinstance(arg, list):
-                    #        current_args[i] = arg[index]  # Pick the element at the current index
-
                     # Update current_kwargs for batch mode (split list elements)
                     for k, v in current_kwargs.items():
                         if isinstance(v, list):
                             current_kwargs[k] = v[0] if len(v) == 1 else v[index]
-                    #for k, v in current_kwargs.items():
-                    #    if isinstance(v, list):
-                    #        current_kwargs[k] = v[index]  # Pick the element at the current index
-
+                    
                     # Generate cache key for current index
                     current_key = generate_cache_key(func.__name__,
                         serialize_arguments(*current_args)[0],
@@ -122,13 +115,7 @@ def cache_function(batch_mode=False, disable_cache=False):
                             for kwarg_key in current_kwargs:
                                 if isinstance(kwargs[kwarg_key], list):
                                     current_kwargs[kwarg_key] = kwargs[kwarg_key][0] if len(kwargs[kwarg_key]) == 1 else kwargs[kwarg_key][index]
-                            #for k in range(len(current_args)):
-                            #    if isinstance(current_args[k], list):
-                            #        current_args[k] = args[k][index]
-                            #for kwarg_key in current_kwargs:
-                            #    if isinstance(kwargs[kwarg_key], list):
-                            #        current_kwargs[kwarg_key] = kwargs[kwarg_key][index]
-
+                            
                             current_key = generate_cache_key(func.__name__,
                                 serialize_arguments(*current_args)[0],
                                 serialize_arguments(**current_kwargs)[1])
@@ -172,14 +159,9 @@ def cache_function(batch_mode=False, disable_cache=False):
                     return result
             
             else: # handling load and save cache for functions that are no batch calls
+                
                 current_args = list(args)
                 current_kwargs = kwargs.copy()
-                for i, arg in enumerate(current_args):
-                    if isinstance(arg, list):
-                        current_args[i] = arg[0] if len(arg) == 1 else arg[index]
-                for k, v in current_kwargs.items():
-                    if isinstance(v, list):
-                        current_kwargs[k] = v[0] if len(v) == 1 else v[index]
                 
                 # Generate cache key for current index
                 single_cache_key = generate_cache_key(func.__name__,
@@ -203,3 +185,14 @@ def cache_function(batch_mode=False, disable_cache=False):
         return wrapper
     
     return decorator
+
+#from cache.cache_database import CacheDatabase
+#from cache.cache import cache_function
+
+#cache_db = CacheDatabase()
+#x = cache_db.load_all_cache()
+#cache_db.delete_cache(['cb0be629542a195cc3949f4d74383b2f'])
+#cache_db.load_cache('1b0cf888bed19f82ca4b946214e60979')
+
+#results = cache_db.search_partial_match(x, '{"result":[{"sector":"Animal production","topic":"Child labour","topic_alias":"')
+# next(iter(results.items()))

@@ -80,3 +80,7 @@ class CacheDatabase:
         conn.commit()  # Ensure changes are committed
         conn.close()
 
+    def search_partial_match(self, dictionary, search_term):
+        """Search for a partial match in the cache database."""
+        return {key: value for key, value in dictionary.items() if search_term in str(value)}
+

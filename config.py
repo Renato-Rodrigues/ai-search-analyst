@@ -12,9 +12,9 @@ config = {
 
     'default_number_of_results': '10', # Default number of results in search queries
     'default_search_period': 'y1', # Default serach period
-    'default_disable_cache': 'false', # Default serach period
-
-    'llm_batch_process': 'true', # enable llam batch process request
+    'default_disable_cache': 'false', # Disable cache load and save
+    
+    'llm_batch_process': 'true', # enable llm batch process request
     'batch_sleep':'30', # sleep time in seconds to check for batch results
 
     # AI Service API keys loaded from environment variables
@@ -65,8 +65,9 @@ config = {
 
     # test mode
     'test': {
-        'inputs': 7,
-        'search_results': 10
+        'inputs': 100,
+        'search_results': 20,
+        'queries_limit':10
     }
 }
 

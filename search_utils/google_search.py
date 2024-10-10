@@ -64,7 +64,7 @@ def perform_google_search(search_query, exactTerms, orTerms, num_results, dateRe
         if response.status_code in error_messages:
             error_message = f"{error_messages[response.status_code]} Status code: {response.status_code}"
             warnings.warn(error_message, UserWarning)
-            return {'[Google Search] error': error_message}  # Return error in a format that won't be cached
+            return {'error': error_message}  # Return error in a format that won't be cached
         
         print(f"[Google Search] Performing search for: {params['q']}, exactTerms: {params['exactTerms']}, orTerms: {params['orTerms']}") # Log the search parameters
             
